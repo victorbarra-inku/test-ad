@@ -1,0 +1,18 @@
+{
+  "name": "fabric-json-to-image",
+  "version": "1.0.0",
+  "description": "Simple Node.js project to convert Fabric.js JSON to images",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "render": "node index.js"
+  },
+  "keywords": ["fabricjs", "canvas", "image", "rendering"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "fabric": "^6.0.0",
+    "canvas": "^2.11.2"
+  }
+}

@@ -2,9 +2,46 @@ import { StaticCanvas } from 'fabric/node';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { loadImage } from 'canvas';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * Extracts dimensions from a base64 backgroundImage in Fabric.js JSON
+ * @param {Object|string} fabricJson - Fabric.js JSON object or path to JSON file
+ * @returns {Promise<{width: number, height: number}|null>} Image dimensions or null if no backgroundImage
+ */
+async function getBackgroundImageDimensions(fabricJson) {
+  // Load JSON from file if string path provided
+  let json;
+  if (typeof fabricJson === 'string') {
+    const jsonPath = path.isAbsolute(fabricJson) 
+      ? fabricJson 
+      : path.join(__dirname, fabricJson);
+    const jsonContent = fs.readFileSync(jsonPath, 'utf8');
+    json = JSON.parse(jsonContent);
+  } else {
+    json = fabricJson;
+  }
+
+  // Check if backgroundImage exists
+  if (!json.backgroundImage || !json.backgroundImage.src) {
+    return null;
+  }
+
+  try {
+    // Load the image from the data URL
+    const image = await loadImage(json.backgroundImage.src);
+    return {
+      width: image.width,
+      height: image.height
+    };
+  } catch (error) {
+    console.error('Error extracting backgroundImage dimensions:', error.message);
+    return null;
+  }
+}
 
 /**
  * Converts Fabric.js JSON to an image file or returns image data
@@ -27,7 +64,7 @@ async function fabricJsonToImage(fabricJson, options = {}) {
     width = 800,
     height = 600,
     format = 'png',
-    returnFormat = 'dataUrl' // 'buffer', 'base64', 'dataUrl', or 'filepath'
+    returnFormat = 'filepath' // 'buffer', 'base64', 'dataUrl', or 'filepath'
   } = options;
 
   // Load JSON from file if string path provided
@@ -42,8 +79,27 @@ async function fabricJsonToImage(fabricJson, options = {}) {
     json = fabricJson;
   }
 
-  // Create canvas
-  const canvas = new StaticCanvas(null, { width, height });
+  // Always extract and display backgroundImage dimensions if present
+  if (json.backgroundImage && json.backgroundImage.src) {
+    try {
+      const dimensions = await getBackgroundImageDimensions(json);
+      if (dimensions) {
+        console.log(`\n📐 BackgroundImage Dimensions:`);
+        console.log(`   Width: ${dimensions.width}px`);
+        console.log(`   Height: ${dimensions.height}px`);
+        console.log(`   Aspect Ratio: ${(dimensions.width / dimensions.height).toFixed(2)}`);
+      }
+    } catch (error) {
+      // Silently fail if dimensions can't be extracted
+    }
+  }
+
+  // Use canvas dimensions from JSON if available, otherwise use provided/default dimensions
+  const canvasWidth = json.width || width;
+  const canvasHeight = json.height || height;
+
+  // Create canvas with correct dimensions
+  const canvas = new StaticCanvas(null, { width: canvasWidth, height: canvasHeight });
 
   // Load Fabric.js JSON
   await canvas.loadFromJSON(json);
@@ -120,6 +176,7 @@ Options:
   --height, -h         Canvas height (default: 600)
   --format, -f         Image format: png or jpeg (default: png)
   --return-format, -r  Return format: buffer, base64, dataUrl, or filepath (default: filepath)
+  --dimensions, -d     Extract and display backgroundImage dimensions only (no rendering)
 
 Examples:
   node index.js fabric-data.json
@@ -127,12 +184,32 @@ Examples:
   node index.js fabric-data.json -o result.jpg -f jpeg
   node index.js fabric-data.json -r dataUrl
   node index.js fabric-data.json --return-format base64
+  node index.js fabric-data.json --dimensions
     `);
     process.exit(0);
   }
 
   const inputFile = args[0];
   const options = {};
+
+  // Check for dimensions flag first
+  if (args.includes('--dimensions') || args.includes('-d')) {
+    try {
+      const dimensions = await getBackgroundImageDimensions(inputFile);
+      if (dimensions) {
+        console.log(`\n📐 BackgroundImage Dimensions:`);
+        console.log(`   Width: ${dimensions.width}px`);
+        console.log(`   Height: ${dimensions.height}px`);
+        console.log(`   Aspect Ratio: ${(dimensions.width / dimensions.height).toFixed(2)}`);
+      } else {
+        console.log('\n⚠️  No backgroundImage found in JSON');
+      }
+    } catch (error) {
+      console.error('❌ Error:', error.message);
+      process.exit(1);
+    }
+    return;
+  }
 
   // Parse command line arguments
   for (let i = 1; i < args.length; i += 2) {
@@ -190,7 +267,7 @@ Examples:
 }
 
 // Export for programmatic use
-export { fabricJsonToImage };
+export { fabricJsonToImage, getBackgroundImageDimensions };
 
 // Run CLI if executed directly
 const isMainModule = process.argv[1] && 

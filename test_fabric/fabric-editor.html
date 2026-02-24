@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fabric.js v7 Reference Editor</title>
+<script src="https://cdn.jsdelivr.net/npm/fabric@7.2.0/dist/index.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════ RESET & VARIABLES ═══════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-0: #0a0b0e; --bg-1: #111318; --bg-2: #181a21; --bg-3: #1f222b; --bg-4: #272a36;
+  --bg-hover: #2a2e3a; --bg-active: #323745;
+  --border-0: #1e2029; --border-1: #2a2d38; --border-2: #363a48;
+  --text-0: #ecedf0; --text-1: #b0b3bf; --text-2: #787c8d; --text-3: #4e5264;
+  --accent: #e8964f; --accent-dim: rgba(232,150,79,0.15); --accent-hover: #f0a563;
+  --blue: #5b9cf5; --green: #4ade80; --red: #f87171; --purple: #a78bfa; --cyan: #22d3ee; --yellow: #facc15;
+  --radius: 6px; --radius-sm: 4px;
+  --font: 'Outfit', system-ui, sans-serif; --mono: 'JetBrains Mono', monospace;
+}
+body { font-family: var(--font); background: var(--bg-0); color: var(--text-0); height: 100vh; overflow: hidden; display: flex; flex-direction: column; font-size: 13px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-2); }
+input, select, textarea, button { font-family: var(--font); }
+
+/* ═══════════════════ HEADER ═══════════════════ */
+.hdr { display: flex; align-items: center; height: 44px; background: var(--bg-1); border-bottom: 1px solid var(--border-0); padding: 0 12px; flex-shrink: 0; gap: 8px; }
+.hdr-brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; letter-spacing: -0.3px; margin-right: 8px; white-space: nowrap; }
+.hdr-brand .mark { width: 18px; height: 18px; background: var(--accent); border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.hdr-brand .mark svg { width: 11px; height: 11px; color: #000; }
+.hdr-brand .ver { font-weight: 400; color: var(--text-2); font-size: 11px; }
+.hdr-sep { width: 1px; height: 20px; background: var(--border-1); margin: 0 4px; flex-shrink: 0; }
+.hdr-group { display: flex; align-items: center; gap: 2px; }
+
+.btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid var(--border-1); border-radius: var(--radius-sm); background: var(--bg-3); color: var(--text-0); font-size: 12px; font-weight: 500; cursor: pointer; transition: all .12s; white-space: nowrap; line-height: 1; }
+.btn:hover { background: var(--bg-hover); border-color: var(--border-2); }
+.btn:active { background: var(--bg-active); }
+.btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.btn-accent { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+.btn-accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text-1); }
+.btn-ghost:hover { background: var(--bg-hover); color: var(--text-0); }
+.btn-ghost.active { background: var(--accent-dim); color: var(--accent); }
+.btn-icon { padding: 5px; }
+.hdr-right { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+
+/* ═══════════════════ MAIN LAYOUT ═══════════════════ */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* ═══════════ LEFT TOOLBAR ═══════════ */
+.tbar { width: 44px; background: var(--bg-1); border-right: 1px solid var(--border-0); display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 2px; flex-shrink: 0; }
+.tbtn { width: 32px; height: 32px; border: none; border-radius: var(--radius-sm); background: transparent; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .12s; position: relative; }
+.tbtn:hover { background: var(--bg-hover); color: var(--text-0); }
+.tbtn.active { background: var(--accent-dim); color: var(--accent); }
+.tbtn svg { width: 18px; height: 18px; }
+.tsep { width: 20px; height: 1px; background: var(--border-1); margin: 4px 0; }
+.tbtn[data-tip]::after { content: attr(data-tip); position: absolute; left: 40px; top: 50%; transform: translateY(-50%); background: var(--bg-3); border: 1px solid var(--border-1); padding: 3px 7px; border-radius: var(--radius-sm); font-size: 11px; color: var(--text-0); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .12s; z-index: 100; font-family: var(--font); }
+.tbtn:hover[data-tip]::after { opacity: 1; }
+
+/* ═══════════ CANVAS AREA ═══════════ */
+.cvs-area { flex: 1; position: relative; overflow: hidden; background: var(--bg-0); background-image: radial-gradient(circle, #161820 1px, transparent 1px); background-size: 20px 20px; }
+.cvs-wrap { position: absolute; box-shadow: 0 4px 40px rgba(0,0,0,.5); border-radius: 3px; overflow: hidden; }
+.cvs-wrap::before { content: ''; position: absolute; inset: 0; z-index: 0; background-color: #222; background-image: linear-gradient(45deg, #2a2a2a 25%, transparent 25%), linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #2a2a2a 75%), linear-gradient(-45deg, transparent 75%, #2a2a2a 75%); background-size: 14px 14px; background-position: 0 0, 0 7px, 7px -7px, -7px 0; }
+.cvs-wrap canvas { display: block; position: relative; z-index: 1; }
+
+/* Zoom bar */
+.zoom-bar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; background: var(--bg-1); border: 1px solid var(--border-1); border-radius: var(--radius); padding: 3px 4px; z-index: 10; }
+.zoom-bar .btn { border: none; background: transparent; padding: 4px 6px; }
+.zoom-label { font-size: 11px; font-family: var(--mono); color: var(--text-1); min-width: 40px; text-align: center; user-select: none; }
+
+/* Coordinates display */
+.coords { position: absolute; bottom: 10px; left: 10px; font-size: 10px; font-family: var(--mono); color: var(--text-3); z-index: 10; padding: 3px 7px; background: var(--bg-1); border: 1px solid var(--border-0); border-radius: var(--radius-sm); }
+
+/* ═══════════ RIGHT PANEL ═══════════ */
+.panel { width: 320px; background: var(--bg-1); border-left: 1px solid var(--border-0); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+.panel-tabs { display: flex; border-bottom: 1px solid var(--border-0); flex-shrink: 0; }
+.ptab { flex: 1; padding: 8px 0; text-align: center; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--text-3); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all .12s; }
+.ptab:hover { color: var(--text-2); }
+.ptab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.panel-body { flex: 1; overflow-y: auto; }
+
+/* ── LAYERS TAB ── */
+.layers { padding: 6px; }
+.ly { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid transparent; margin-bottom: 1px; user-select: none; transition: all .1s; }
+.ly:hover { background: var(--bg-hover); }
+.ly.sel { background: var(--accent-dim); border-color: rgba(232,150,79,.2); }
+.ly.dragging { opacity: .4; }
+.ly-exp { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-3); cursor: pointer; flex-shrink: 0; transition: transform .15s; border: none; background: none; padding: 0; }
+.ly-exp.open { transform: rotate(90deg); }
+.ly-exp.hidden { visibility: hidden; }
+.ly-ico { width: 26px; height: 26px; border-radius: 4px; background: var(--bg-3); border: 1px solid var(--border-0); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ly-ico svg { width: 13px; height: 13px; color: var(--text-2); }
+.ly-info { flex: 1; min-width: 0; }
+.ly-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ly-type { font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: .4px; }
+.ly-acts { display: flex; gap: 1px; opacity: 0; transition: opacity .1s; }
+.ly:hover .ly-acts { opacity: 1; }
+.ly-act { width: 22px; height: 22px; border: none; border-radius: 3px; background: transparent; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .1s; }
+.ly-act:hover { background: var(--bg-3); color: var(--text-0); }
+.ly-act.off { color: var(--text-3); opacity: .5; }
+.ly-act svg { width: 12px; height: 12px; }
+.ly-children { padding-left: 22px; }
+.layers-empty { padding: 24px 12px; text-align: center; color: var(--text-3); font-size: 12px; line-height: 1.6; }
+
+/* ── PROPERTIES TAB ── */
+.props { padding: 8px; display: none; flex-direction: column; gap: 2px; }
+.props.active { display: flex; }
+.props-empty { padding: 24px 12px; text-align: center; color: var(--text-3); font-size: 12px; }
+.pg { border: 1px solid var(--border-0); border-radius: var(--radius); overflow: hidden; margin-bottom: 4px; }
+.pg-hdr { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--bg-2); cursor: pointer; user-select: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-2); }
+.pg-hdr:hover { background: var(--bg-3); }
+.pg-hdr .pg-arrow { width: 10px; height: 10px; transition: transform .15s; color: var(--text-3); }
+.pg-hdr.closed .pg-arrow { transform: rotate(-90deg); }
+.pg-body { padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+.pg-hdr.closed + .pg-body { display: none; }
+.pr { display: flex; align-items: center; gap: 6px; min-height: 26px; }
+.pr-label { font-size: 11px; color: var(--text-2); width: 64px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-label.wide { width: auto; }
+.pr-val { flex: 1; display: flex; align-items: center; gap: 4px; min-width: 0; }
+.pr-input { width: 100%; background: var(--bg-0); border: 1px solid var(--border-0); border-radius: var(--radius-sm); padding: 4px 6px; color: var(--text-0); font-family: var(--mono); font-size: 11px; outline: none; transition: border-color .12s; }
+.pr-input:focus { border-color: var(--accent); }
+.pr-input[type=number] { -moz-appearance: textfield; }
+.pr-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.pr-color { width: 24px; height: 24px; border: 1px solid var(--border-1); border-radius: var(--radius-sm); cursor: pointer; padding: 1px; background: var(--bg-0); flex-shrink: 0; }
+.pr-color::-webkit-color-swatch-wrapper { padding: 0; }
+.pr-color::-webkit-color-swatch { border: none; border-radius: 2px; }
+.pr-select { width: 100%; background: var(--bg-0); border: 1px solid var(--border-0); border-radius: var(--radius-sm); padding: 4px 6px; color: var(--text-0); font-size: 11px; outline: none; cursor: pointer; }
+.pr-check { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+.pr-half { display: flex; gap: 4px; flex: 1; }
+.pr-half > * { flex: 1; }
+.pr-tag { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; }
+.pr-tag.rect { background: rgba(91,156,245,.15); color: var(--blue); }
+.pr-tag.circle { background: rgba(74,222,128,.15); color: var(--green); }
+.pr-tag.text { background: rgba(167,139,250,.15); color: var(--purple); }
+.pr-tag.group { background: rgba(232,150,79,.15); color: var(--accent); }
+.pr-tag.path { background: rgba(34,211,238,.15); color: var(--cyan); }
+.pr-tag.image { background: rgba(250,204,21,.15); color: var(--yellow); }
+.pr-tag.other { background: var(--bg-4); color: var(--text-1); }
+
+/* Gradient display */
+.grad-bar { height: 16px; border-radius: 3px; border: 1px solid var(--border-0); width: 100%; }
+.grad-stop { display: flex; align-items: center; gap: 6px; font-size: 10px; font-family: var(--mono); color: var(--text-2); padding: 2px 0; }
+.grad-stop .swatch { width: 14px; height: 14px; border-radius: 2px; border: 1px solid var(--border-1); flex-shrink: 0; }
+
+/* ── JSON TAB ── */
+.json-tab { padding: 8px; display: none; flex-direction: column; gap: 6px; height: 100%; }
+.json-tab.active { display: flex; }
+.json-toggle { display: flex; gap: 2px; background: var(--bg-0); border-radius: var(--radius-sm); padding: 2px; flex-shrink: 0; }
+.json-toggle .btn { flex: 1; justify-content: center; font-size: 11px; border: none; background: transparent; color: var(--text-2); padding: 4px 8px; border-radius: 3px; }
+.json-toggle .btn.active { background: var(--bg-3); color: var(--text-0); }
+.json-view { flex: 1; background: var(--bg-0); border: 1px solid var(--border-0); border-radius: var(--radius); overflow: auto; font-family: var(--mono); font-size: 11px; line-height: 1.7; padding: 8px; white-space: pre-wrap; word-break: break-all; }
+.json-view .jk { color: #7aa2f7; } /* key */
+.json-view .js { color: #9ece6a; } /* string */
+.json-view .jn { color: #e0af68; } /* number */
+.json-view .jb { color: #bb9af7; } /* boolean */
+.json-view .jnull { color: #565f89; } /* null */
+.json-view .jp { color: var(--text-3); } /* punctuation */
+.json-view .jcol { cursor: pointer; user-select: none; }
+.json-view .jcol::before { content: '▸ '; color: var(--text-3); font-size: 9px; }
+.json-view .jcol.open::before { content: '▾ '; }
+.json-view .jcol-body { display: none; }
+.json-view .jcol.open + .jcol-body { display: block; }
+.json-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.json-actions .btn { flex: 1; justify-content: center; }
+
+/* ═══════════ FOOTER ═══════════ */
+.ftr { height: 24px; background: var(--bg-1); border-top: 1px solid var(--border-0); display: flex; align-items: center; padding: 0 12px; font-size: 10px; color: var(--text-3); gap: 12px; flex-shrink: 0; font-family: var(--mono); }
+.ftr .sep { width: 1px; height: 10px; background: var(--border-0); }
+
+/* ═══════════ MODAL ═══════════ */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+.modal-bg.open { display: flex; }
+.modal { background: var(--bg-2); border: 1px solid var(--border-1); border-radius: 10px; padding: 20px; width: 560px; max-height: 85vh; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.modal h3 { font-size: 15px; font-weight: 600; }
+.modal textarea { height: 260px; background: var(--bg-0); border: 1px solid var(--border-0); border-radius: var(--radius); padding: 10px; color: var(--text-0); font-family: var(--mono); font-size: 11px; line-height: 1.6; resize: none; outline: none; }
+.modal textarea:focus { border-color: var(--accent); }
+.modal-opts { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-1); }
+.modal-opts input[type=checkbox] { accent-color: var(--accent); }
+.modal-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.modal-footer .right { display: flex; gap: 6px; }
+
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--bg-3); border: 1px solid var(--border-1); border-radius: var(--radius); padding: 8px 16px; font-size: 12px; color: var(--text-0); z-index: 2000; display: none; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.toast.ok { border-color: rgba(74,222,128,.3); color: var(--green); }
+.toast.err { border-color: rgba(248,113,113,.3); color: var(--red); }
+.toast.show { display: block; animation: toastIn .2s ease; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* ═══════════ DIAGNOSTIC PANEL (in modal) ═══════════ */
+.diag { background: var(--bg-0); border: 1px solid var(--border-0); border-radius: var(--radius); padding: 8px 10px; font-size: 11px; font-family: var(--mono); color: var(--text-2); line-height: 1.8; display: none; max-height: 120px; overflow-y: auto; }
+.diag.show { display: block; }
+.diag .ok { color: var(--green); }
+.diag .warn { color: var(--yellow); }
+.diag .info { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<div class="hdr">
+  <div class="hdr-brand">
+    <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polygon points="12 2 22 22 2 22"/></svg></div>
+    Fabric Editor <span class="ver">v7.2.0</span>
+  </div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-group">
+    <button class="btn btn-ghost btn-icon" id="btnUndo" onclick="undo()" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+    <button class="btn btn-ghost btn-icon" id="btnRedo" onclick="redo()" title="Redo (Ctrl+Shift+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg></button>
+  </div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-group">
+    <button class="btn btn-ghost btn-icon" onclick="alignObjects('left')" title="Align Left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="2" x2="4" y2="22"/><rect x="8" y="4" width="12" height="6" rx="1"/><rect x="8" y="14" width="8" height="6" rx="1"/></svg></button>
+    <button class="btn btn-ghost btn-icon" onclick="alignObjects('centerH')" title="Align Center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><rect x="5" y="4" width="14" height="6" rx="1"/><rect x="7" y="14" width="10" height="6" rx="1"/></svg></button>
+    <button class="btn btn-ghost btn-icon" onclick="alignObjects('right')" title="Align Right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="20" y1="2" x2="20" y2="22"/><rect x="4" y="4" width="12" height="6" rx="1"/><rect x="8" y="14" width="8" height="6" rx="1"/></svg></button>
+    <button class="btn btn-ghost btn-icon" onclick="alignObjects('top')" title="Align Top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="4" x2="22" y2="4"/><rect x="4" y="8" width="6" height="12" rx="1"/><rect x="14" y="8" width="6" height="8" rx="1"/></svg></button>
+    <button class="btn btn-ghost btn-icon" onclick="alignObjects('centerV')" title="Align Middle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="12" x2="22" y2="12"/><rect x="4" y="5" width="6" height="14" rx="1"/><rect x="14" y="7" width="6" height="10" rx="1"/></svg></button>
+    <button class="btn btn-ghost btn-icon" onclick="alignObjects('bottom')" title="Align Bottom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="20" x2="22" y2="20"/><rect x="4" y="4" width="6" height="12" rx="1"/><rect x="14" y="8" width="6" height="8" rx="1"/></svg></button>
+  </div>
+  <div class="hdr-right">
+    <button class="btn" onclick="exportPNG()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> PNG</button>
+    <button class="btn" onclick="exportSVG()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> SVG</button>
+    <button class="btn" onclick="exportJSON()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> JSON</button>
+    <button class="btn btn-accent" onclick="openImport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Import</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div class="main">
+  <!-- LEFT TOOLBAR -->
+  <div class="tbar">
+    <button class="tbtn active" data-tip="Select (V)" data-tool="select" onclick="setTool('select',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg></button>
+    <button class="tbtn" data-tip="Pan (H)" data-tool="pan" onclick="setTool('pan',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V5a2 2 0 0 0-4 0v9"/><path d="M18 11a2 2 0 0 1 4 0v7a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 18"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tip="Rectangle (R)" onclick="addRect()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></button>
+    <button class="tbtn" data-tip="Circle (C)" onclick="addCircle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></button>
+    <button class="tbtn" data-tip="Ellipse" onclick="addEllipse()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="7"/></svg></button>
+    <button class="tbtn" data-tip="Triangle" onclick="addTriangle()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 22 2 22"/></svg></button>
+    <button class="tbtn" data-tip="Line" onclick="addLine()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="5"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tip="Text (T)" onclick="addText()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9.5" y1="20" x2="14.5" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></button>
+    <button class="tbtn" data-tip="Textbox" onclick="addTextbox()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="13" y2="13"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tip="Zoom to Fit (Ctrl+0)" onclick="zoomToFit()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></button>
+    <button class="tbtn" data-tip="Duplicate (Ctrl+D)" onclick="duplicateSelected()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+    <button class="tbtn" data-tip="Group (Ctrl+G)" onclick="groupSelected()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1"/></svg></button>
+    <button class="tbtn" data-tip="Ungroup (Ctrl+Shift+G)" onclick="ungroupSelected()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 3"/></svg></button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-tip="Delete (Del)" onclick="deleteSelected()" style="color:var(--red)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+  </div>
+
+  <!-- CANVAS AREA -->
+  <div class="cvs-area" id="cvsArea">
+    <div class="cvs-wrap" id="cvsWrap"><canvas id="fc" width="800" height="560"></canvas></div>
+    <div class="coords" id="coordsDisplay">x: 0 y: 0</div>
+    <div class="zoom-bar">
+      <button class="btn btn-ghost btn-icon" onclick="zoomOut()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <span class="zoom-label" id="zoomLabel">100%</span>
+      <button class="btn btn-ghost btn-icon" onclick="zoomIn()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="btn btn-ghost" onclick="zoomReset()" style="font-size:11px;padding:4px 6px">1:1</button>
+      <button class="btn btn-ghost" onclick="zoomToFit()" style="font-size:11px;padding:4px 6px">Fit</button>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel">
+    <div class="panel-tabs">
+      <button class="ptab active" data-tab="layers" onclick="switchTab('layers')">Layers</button>
+      <button class="ptab" data-tab="props" onclick="switchTab('props')">Properties</button>
+      <button class="ptab" data-tab="json" onclick="switchTab('json')">JSON</button>
+    </div>
+    <div class="panel-body" id="panelBody">
+      <div id="tabLayers" class="layers"></div>
+      <div id="tabProps" class="props"></div>
+      <div id="tabJson" class="json-tab">
+        <div class="json-toggle">
+          <button class="btn active" id="jsonBtnCanvas" onclick="setJsonMode('canvas')">Full Canvas</button>
+          <button class="btn" id="jsonBtnSel" onclick="setJsonMode('selected')">Selected</button>
+        </div>
+        <div class="json-view" id="jsonView"></div>
+        <div class="json-actions">
+          <button class="btn" onclick="copyJson()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>
+          <button class="btn" onclick="loadFromJsonTab()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Load from Clipboard</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="ftr">
+  <span id="ftrCount">0 objects</span><span class="sep"></span>
+  <span id="ftrSize">800 × 560</span><span class="sep"></span>
+  <span id="ftrSel">No selection</span><span class="sep"></span>
+  <span id="ftrHistory">⟳ 0</span>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-bg" id="importModal">
+  <div class="modal">
+    <h3>Import Fabric.js JSON</h3>
+    <textarea id="importInput" placeholder="Paste your Fabric.js v7 JSON schema here..." spellcheck="false"></textarea>
+    <div class="modal-opts">
+      <label><input type="checkbox" id="importOriginFix" checked> Inject left/top origins (for schemas without explicit originX/Y)</label>
+    </div>
+    <div class="diag" id="importDiag"></div>
+    <div class="modal-footer">
+      <button class="btn" id="importValidateBtn" onclick="validateImport()">Validate</button>
+      <div class="right">
+        <button class="btn" onclick="closeImport()">Cancel</button>
+        <button class="btn btn-accent" onclick="doImport()">Import</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// FABRIC.JS v7 REFERENCE EDITOR — KITCHEN SINK
+// ═══════════════════════════════════════════════════════════════════
+
+// ────────────────────── INIT ──────────────────────
+const canvas = new fabric.Canvas('fc', {
+  backgroundColor: '#ffffff',
+  preserveObjectStacking: true,
+  selection: true,
+  controlsAboveOverlay: true,
+});
+
+let DOC_W = 800, DOC_H = 560, ZOOM = 1;
+let currentTool = 'select';
+let nameCounter = 0;
+let isPanning = false, panStart = null;
+let jsonMode = 'canvas';
+
+const N = (type) => { nameCounter++; return `${type} ${nameCounter}`; };
+
+// ────────────────────── ZOOM & VIEWPORT ──────────────────────
+function applyZoom(z) {
+  ZOOM = Math.max(0.03, Math.min(z, 5));
+  const dw = Math.round(DOC_W * ZOOM), dh = Math.round(DOC_H * ZOOM);
+  canvas.setDimensions({ width: dw, height: dh });
+  canvas.setZoom(ZOOM);
+  const wr = document.getElementById('cvsWrap');
+  wr.style.width = dw + 'px'; wr.style.height = dh + 'px';
+  // Center in viewport
+  const area = document.getElementById('cvsArea');
+  const cx = (area.clientWidth - dw) / 2, cy = (area.clientHeight - dh) / 2;
+  wr.style.left = Math.max(0, cx) + 'px';
+  wr.style.top = Math.max(0, cy) + 'px';
+  document.getElementById('zoomLabel').textContent = Math.round(ZOOM * 100) + '%';
+  document.getElementById('ftrSize').textContent = `${DOC_W} × ${DOC_H}`;
+}
+function zoomToFit() {
+  const area = document.getElementById('cvsArea');
+  const pad = 60;
+  const z = Math.min((area.clientWidth - pad) / DOC_W, (area.clientHeight - pad) / DOC_H, 1);
+  applyZoom(z);
+}
+function zoomIn() { applyZoom(ZOOM * 1.25); }
+function zoomOut() { applyZoom(ZOOM / 1.25); }
+function zoomReset() { applyZoom(1); }
+
+// ────────────────────── PAN ──────────────────────
+function startPan(e) {
+  if (currentTool !== 'pan' && !e.buttons === 4) return; // middle button or pan tool
+  isPanning = true;
+  panStart = { x: e.clientX, y: e.clientY };
+  const wr = document.getElementById('cvsWrap');
+  panStart.left = parseInt(wr.style.left) || 0;
+  panStart.top = parseInt(wr.style.top) || 0;
+  e.preventDefault();
+}
+function doPan(e) {
+  if (!isPanning || !panStart) return;
+  const wr = document.getElementById('cvsWrap');
+  wr.style.left = (panStart.left + e.clientX - panStart.x) + 'px';
+  wr.style.top = (panStart.top + e.clientY - panStart.y) + 'px';
+}
+function endPan() { isPanning = false; panStart = null; }
+
+// ────────────────────── JSON PREPROCESSOR ──────────────────────
+function injectOrigins(obj) {
+  if (!obj || typeof obj !== 'object') return;
+  if (obj.type) {
+    if (!obj.hasOwnProperty('originX')) obj.originX = 'left';
+    if (!obj.hasOwnProperty('originY')) obj.originY = 'top';
+  }
+  if (Array.isArray(obj.objects)) obj.objects.forEach(injectOrigins);
+}
+function preprocessJSON(json, fixOrigins) {
+  if (fixOrigins && Array.isArray(json.objects)) {
+    json.objects.forEach(injectOrigins);
+  }
+  return json;
+}
+
+// ────────────────────── FONT LOADER ──────────────────────
+function collectFonts(obj, fonts = new Set()) {
+  if (!obj || typeof obj !== 'object') return fonts;
+  if (obj.fontFamily) fonts.add(obj.fontFamily);
+  if (Array.isArray(obj.objects)) obj.objects.forEach(c => collectFonts(c, fonts));
+  if (obj.styles) {
+    for (const lk of Object.keys(obj.styles)) {
+      const line = obj.styles[lk];
+      if (line && typeof line === 'object') {
+        for (const ck of Object.keys(line)) {
+          if (line[ck]?.fontFamily) fonts.add(line[ck].fontFamily);
+        }
+      }
+    }
+  }
+  return fonts;
+}
+
+async function loadFonts(json) {
+  const fonts = collectFonts({ objects: json.objects });
+  if (!fonts.size) return;
+  // Dynamically load from Google Fonts
+  const families = [...fonts].map(f => f.replace(/ /g, '+')).join('&family=');
+  const link = document.createElement('link');
+  link.href = `https://fonts.googleapis.com/css2?family=${families}:wght@100;200;300;400;500;600;700;800;900;1000&display=swap`;
+  link.rel = 'stylesheet';
+  document.head.appendChild(link);
+  // Wait for fonts to load
+  const proms = [];
+  for (const f of fonts) {
+    for (const w of ['100','200','300','400','500','600','700','800','900']) {
+      proms.push(document.fonts.load(`${w} 16px "${f}"`).catch(() => {}));
+      proms.push(document.fonts.load(`italic ${w} 16px "${f}"`).catch(() => {}));
+    }
+  }
+  await Promise.all(proms);
+  await document.fonts.ready;
+}
+
+// ────────────────────── HISTORY (UNDO/REDO) ──────────────────────
+let history = [], historyIdx = -1, historyLock = false;
+const MAX_HISTORY = 50;
+
+function saveState() {
+  if (historyLock) return;
+  const state = JSON.stringify(getCanvasJSON());
+  // Remove future states
+  history = history.slice(0, historyIdx + 1);
+  history.push(state);
+  if (history.length > MAX_HISTORY) history.shift();
+  historyIdx = history.length - 1;
+  updateHistoryBtns();
+}
+function undo() {
+  if (historyIdx <= 0) return;
+  historyIdx--;
+  restoreState(history[historyIdx]);
+}
+function redo() {
+  if (historyIdx >= history.length - 1) return;
+  historyIdx++;
+  restoreState(history[historyIdx]);
+}
+async function restoreState(stateStr) {
+  historyLock = true;
+  const json = JSON.parse(stateStr);
+  canvas.setZoom(1);
+  canvas.setDimensions({ width: DOC_W, height: DOC_H });
+  await canvas.loadFromJSON(json);
+  applyZoom(ZOOM);
+  canvas.requestRenderAll();
+  updateLayers();
+  updateProps();
+  historyLock = false;
+  updateHistoryBtns();
+}
+function updateHistoryBtns() {
+  document.getElementById('btnUndo').style.opacity = historyIdx > 0 ? 1 : .3;
+  document.getElementById('btnRedo').style.opacity = historyIdx < history.length - 1 ? 1 : .3;
+  document.getElementById('ftrHistory').textContent = `⟳ ${historyIdx}/${history.length - 1}`;
+}
+
+// ────────────────────── CANVAS JSON HELPERS ──────────────────────
+function getCanvasJSON() {
+  const prevZoom = ZOOM;
+  canvas.setZoom(1);
+  canvas.setDimensions({ width: DOC_W, height: DOC_H });
+  const json = canvas.toJSON([
+    '_customName', 'selectable', 'evented', 'editable',
+    'originX', 'originY', 'skewX', 'skewY',
+    'strokeDashArray', 'strokeLineCap', 'strokeLineJoin',
+    'shadow', 'clipPath', 'rx', 'ry',
+    'charSpacing', 'lineHeight', 'textAlign', 'fontStyle', 'fontWeight',
+    'underline', 'linethrough', 'overline', 'styles',
+    'flipX', 'flipY', 'visible', 'hasControls', 'hasBorders',
+    'lockMovementX', 'lockMovementY', 'lockRotation', 'lockScalingX', 'lockScalingY',
+  ]);
+  json.width = DOC_W;
+  json.height = DOC_H;
+  applyZoom(prevZoom);
+  return json;
+}
+
+function getSelectedJSON() {
+  const obj = canvas.getActiveObject();
+  if (!obj) return null;
+  return obj.toJSON([
+    '_customName', 'selectable', 'evented', 'editable',
+    'originX', 'originY', 'skewX', 'skewY',
+    'strokeDashArray', 'strokeLineCap', 'strokeLineJoin',
+    'shadow', 'clipPath', 'rx', 'ry',
+    'charSpacing', 'lineHeight', 'textAlign', 'fontStyle', 'fontWeight',
+    'underline', 'linethrough', 'overline', 'styles',
+    'flipX', 'flipY', 'visible', 'hasControls', 'hasBorders',
+    'lockMovementX', 'lockMovementY', 'lockRotation', 'lockScalingX', 'lockScalingY',
+  ]);
+}
+
+// ────────────────────── IMPORT / LOAD ──────────────────────
+function openImport() {
+  document.getElementById('importModal').classList.add('open');
+  document.getElementById('importInput').focus();
+  document.getElementById('importDiag').className = 'diag';
+}
+function closeImport() {
+  document.getElementById('importModal').classList.remove('open');
+  document.getElementById('importInput').value = '';
+  document.getElementById('importDiag').className = 'diag';
+}
+
+function validateImport() {
+  const txt = document.getElementById('importInput').value.trim();
+  const diag = document.getElementById('importDiag');
+  if (!txt) { diag.className = 'diag'; return; }
+  try {
+    const json = JSON.parse(txt);
+    let lines = [];
+    lines.push(`<span class="ok">✓ Valid JSON</span>`);
+    lines.push(`<span class="info">Version: ${json.version || 'unspecified'}</span>`);
+    lines.push(`<span class="info">Canvas: ${json.width || '?'} × ${json.height || '?'}</span>`);
+    const objs = json.objects || [];
+    lines.push(`<span class="info">Objects: ${objs.length}</span>`);
+    // Type breakdown
+    const types = {};
+    function countTypes(arr) { arr.forEach(o => { types[o.type] = (types[o.type]||0)+1; if (o.objects) countTypes(o.objects); }); }
+    countTypes(objs);
+    lines.push(`<span class="info">Types: ${Object.entries(types).map(([t,c])=>`${t}(${c})`).join(', ')}</span>`);
+    // Fonts
+    const fonts = collectFonts({ objects: objs });
+    if (fonts.size) lines.push(`<span class="info">Fonts: ${[...fonts].join(', ')}</span>`);
+    // Origin check
+    let hasOrigin = false, missingOrigin = 0;
+    function checkOrigins(arr) { arr.forEach(o => { if (o.originX || o.originY) hasOrigin = true; else missingOrigin++; if (o.objects) checkOrigins(o.objects); }); }
+    checkOrigins(objs);
+    if (missingOrigin > 0 && !hasOrigin) lines.push(`<span class="warn">⚠ No objects have explicit originX/Y — origin injection recommended</span>`);
+    else if (missingOrigin > 0) lines.push(`<span class="warn">⚠ ${missingOrigin} object(s) missing originX/Y</span>`);
+    else lines.push(`<span class="ok">✓ All objects have explicit origins</span>`);
+    // Background
+    if (json.background) lines.push(`<span class="info">Background: ${typeof json.background === 'string' ? json.background : 'complex'}</span>`);
+    diag.innerHTML = lines.join('<br>');
+    diag.className = 'diag show';
+  } catch (e) {
+    diag.innerHTML = `<span class="warn">✗ Invalid JSON: ${e.message}</span>`;
+    diag.className = 'diag show';
+  }
+}
+
+async function doImport() {
+  const txt = document.getElementById('importInput').value.trim();
+  if (!txt) return;
+  try {
+    await loadJSON(txt, document.getElementById('importOriginFix').checked);
+    toast('Imported successfully', 'ok');
+    setTimeout(closeImport, 300);
+  } catch (e) {
+    toast(`Import error: ${e.message}`, 'err');
+  }
+}
+
+async function loadJSON(jsonStr, fixOrigins = true) {
+  const json = JSON.parse(jsonStr);
+  const w = json.width || DOC_W, h = json.height || DOC_H;
+
+  preprocessJSON(json, fixOrigins);
+  await loadFonts(json);
+
+  canvas.setZoom(1);
+  canvas.setDimensions({ width: w, height: h });
+  if (json.background) canvas.set('backgroundColor', json.background);
+
+  await canvas.loadFromJSON(json);
+
+  canvas.getObjects().forEach(o => {
+    if (!o._customName) o._customName = N(typeName(o));
+  });
+
+  DOC_W = w; DOC_H = h;
+  zoomToFit();
+  canvas.requestRenderAll();
+  updateLayers(); updateProps(); updateJsonView();
+  // Reset history for imported canvas
+  history = []; historyIdx = -1; saveState();
+}
+
+// ────────────────────── EXPORT ──────────────────────
+function exportJSON() {
+  const str = JSON.stringify(getCanvasJSON(), null, 2);
+  download(str, 'canvas.json', 'application/json');
+}
+function exportPNG() {
+  const prevZoom = ZOOM;
+  canvas.setZoom(1);
+  canvas.setDimensions({ width: DOC_W, height: DOC_H });
+  const url = canvas.toDataURL({ format: 'png', multiplier: 1 });
+  applyZoom(prevZoom);
+  const a = document.createElement('a'); a.href = url; a.download = 'canvas.png'; a.click();
+}
+function exportSVG() {
+  const prevZoom = ZOOM;
+  canvas.setZoom(1);
+  canvas.setDimensions({ width: DOC_W, height: DOC_H });
+  const svg = canvas.toSVG();
+  applyZoom(prevZoom);
+  download(svg, 'canvas.svg', 'image/svg+xml');
+}
+function download(content, name, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ────────────────────── TOOL & SHAPE CREATION ──────────────────────
+function setTool(tool, btn) {
+  currentTool = tool;
+  document.querySelectorAll('.tbtn[data-tool]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  canvas.selection = tool === 'select';
+  canvas.defaultCursor = tool === 'pan' ? 'grab' : 'default';
+  canvas.getObjects().forEach(o => { if (tool === 'pan') { o._wasSelectable = o.selectable; o.selectable = false; } else if (o._wasSelectable !== undefined) { o.selectable = o._wasSelectable; delete o._wasSelectable; } });
+}
+
+const SHAPE_DEFAULTS = { originX: 'left', originY: 'top' };
+function rndColor() { return ['#e8964f','#5b9cf5','#4ade80','#f87171','#a78bfa','#22d3ee','#ec4899','#facc15','#fb923c','#2dd4bf'][~~(Math.random()*10)]; }
+function addAndSelect(obj, name) { obj._customName = N(name); canvas.add(obj); canvas.setActiveObject(obj); canvas.requestRenderAll(); updateLayers(); updateProps(); saveState(); setTool('select', document.querySelector('[data-tool="select"]')); }
+
+function addRect() { addAndSelect(new fabric.Rect({ left:100+~~(Math.random()*200), top:80+~~(Math.random()*200), width:150, height:100, fill:rndColor(), rx:4, ry:4, ...SHAPE_DEFAULTS }), 'Rect'); }
+function addCircle() { addAndSelect(new fabric.Circle({ left:150+~~(Math.random()*200), top:100+~~(Math.random()*200), radius:60, fill:rndColor(), ...SHAPE_DEFAULTS }), 'Circle'); }
+function addEllipse() { addAndSelect(new fabric.Ellipse({ left:130+~~(Math.random()*200), top:90+~~(Math.random()*200), rx:80, ry:50, fill:rndColor(), ...SHAPE_DEFAULTS }), 'Ellipse'); }
+function addTriangle() { addAndSelect(new fabric.Triangle({ left:120+~~(Math.random()*200), top:80+~~(Math.random()*200), width:120, height:120, fill:rndColor(), ...SHAPE_DEFAULTS }), 'Triangle'); }
+function addLine() { addAndSelect(new fabric.Line([100, 100, 300, 200], { stroke:rndColor(), strokeWidth:3, ...SHAPE_DEFAULTS }), 'Line'); }
+function addText() { addAndSelect(new fabric.IText('Edit me', { left:120+~~(Math.random()*200), top:100+~~(Math.random()*200), fontSize:32, fontFamily:'Outfit', fill:'#1c1d25', ...SHAPE_DEFAULTS }), 'Text'); }
+function addTextbox() { addAndSelect(new fabric.Textbox('Editable textbox with word wrap.', { left:100+~~(Math.random()*200), top:90+~~(Math.random()*200), width:250, fontSize:22, fontFamily:'Outfit', fill:'#1c1d25', ...SHAPE_DEFAULTS }), 'Textbox'); }
+
+function deleteSelected() {
+  const objs = canvas.getActiveObjects();
+  if (!objs.length) return;
+  objs.forEach(o => canvas.remove(o));
+  canvas.discardActiveObject();
+  canvas.requestRenderAll();
+  updateLayers(); updateProps(); saveState();
+}
+
+function duplicateSelected() {
+  const active = canvas.getActiveObject();
+  if (!active) return;
+  active.clone().then(cloned => {
+    cloned.set({ left: (cloned.left || 0) + 20, top: (cloned.top || 0) + 20 });
+    cloned._customName = N(typeName(cloned));
+    canvas.add(cloned);
+    canvas.setActiveObject(cloned);
+    canvas.requestRenderAll();
+    updateLayers(); updateProps(); saveState();
+  });
+}
+
+function groupSelected() {
+  const active = canvas.getActiveObject();
+  if (!active || active.type !== 'activeSelection') return;
+  const group = active.toGroup();
+  group._customName = N('Group');
+  canvas.requestRenderAll();
+  updateLayers(); updateProps(); saveState();
+}
+function ungroupSelected() {
+  const active = canvas.getActiveObject();
+  if (!active || active.type !== 'Group') return;
+  const items = active.toActiveSelection();
+  canvas.requestRenderAll();
+  updateLayers(); updateProps(); saveState();
+}
+
+// ────────────────────── ALIGNMENT ──────────────────────
+function alignObjects(mode) {
+  const active = canvas.getActiveObject();
+  if (!active) return;
+
+  if (active.type === 'activeSelection') {
+    const objs = active.getObjects();
+    const bound = active.getBoundingRect();
+    objs.forEach(o => {
+      const ob = o.getBoundingRect();
+      switch(mode) {
+        case 'left': o.set('left', o.left - ob.left + bound.left); break;
+        case 'right': o.set('left', o.left + (bound.left + bound.width - ob.left - ob.width)); break;
+        case 'centerH': o.set('left', o.left + (bound.left + bound.width/2 - ob.left - ob.width/2)); break;
+        case 'top': o.set('top', o.top - ob.top + bound.top); break;
+        case 'bottom': o.set('top', o.top + (bound.top + bound.height - ob.top - ob.height)); break;
+        case 'centerV': o.set('top', o.top + (bound.top + bound.height/2 - ob.top - ob.height/2)); break;
+      }
+      o.setCoords();
+    });
+  } else {
+    // Single object: align to canvas
+    const sw = DOC_W, sh = DOC_H;
+    const ob = active.getBoundingRect();
+    switch(mode) {
+      case 'left': active.set('left', active.left - ob.left); break;
+      case 'right': active.set('left', active.left + (sw - ob.left - ob.width)); break;
+      case 'centerH': active.set('left', active.left + (sw/2 - ob.left - ob.width/2)); break;
+      case 'top': active.set('top', active.top - ob.top); break;
+      case 'bottom': active.set('top', active.top + (sh - ob.top - ob.height)); break;
+      case 'centerV': active.set('top', active.top + (sh/2 - ob.top - ob.height/2)); break;
+    }
+    active.setCoords();
+  }
+  canvas.requestRenderAll();
+  updateProps(); saveState();
+}
+
+// ────────────────────── LAYER TREE ──────────────────────
+const TYPE_ICONS = {
+  Rect:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>',
+  Circle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>',
+  Ellipse:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="7"/></svg>',
+  Triangle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 22 2 22"/></svg>',
+  Line:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="5"/></svg>',
+  Text:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9.5" y1="20" x2="14.5" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
+  IText:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9.5" y1="20" x2="14.5" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
+  Textbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="13" y2="13"/></svg>',
+  Image:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
+  Path:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  Group:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+  Polygon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/></svg>',
+  Polyline:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/></svg>',
+};
+const ARROW_SVG = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 6 15 12 9 18"/></svg>';
+const EYE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function typeName(o) {
+  const map = { Rect:'Rect', Circle:'Circle', Ellipse:'Ellipse', Triangle:'Triangle', Line:'Line', IText:'Text', Text:'Text', Textbox:'Textbox', Image:'Image', Path:'Path', Group:'Group', Polygon:'Polygon', Polyline:'Polyline' };
+  return map[o.type] || o.type || 'Object';
+}
+function typeTag(o) {
+  const t = (o.type||'').toLowerCase();
+  let cls = 'other';
+  if (t.includes('rect')||t.includes('triangle')||t.includes('ellipse')||t.includes('line')||t.includes('polygon')||t.includes('circle')) cls = 'rect';
+  if (t.includes('circle')) cls = 'circle';
+  if (t.includes('text')||t.includes('itext')||t.includes('textbox')) cls = 'text';
+  if (t.includes('group')) cls = 'group';
+  if (t.includes('path')||t.includes('polyline')) cls = 'path';
+  if (t.includes('image')) cls = 'image';
+  return cls;
+}
+
+let expandedGroups = new Set();
+
+function updateLayers() {
+  const list = document.getElementById('tabLayers');
+  const objects = canvas.getObjects();
+  const active = canvas.getActiveObject();
+  if (!objects.length) {
+    list.innerHTML = '<div class="layers-empty">No layers<br><span style="font-size:11px;color:var(--text-3)">Add shapes or import JSON</span></div>';
+    updateFooter(); return;
+  }
+  let html = '';
+  for (let i = objects.length - 1; i >= 0; i--) {
+    html += renderLayerItem(objects[i], i, active, 0);
+  }
+  list.innerHTML = html;
+  updateFooter();
+}
+
+function renderLayerItem(obj, idx, active, depth) {
+  const sel = active === obj || (active?.type === 'activeSelection' && active.getObjects().includes(obj));
+  const vis = obj.visible !== false;
+  const name = obj._customName || typeName(obj);
+  const icon = TYPE_ICONS[obj.type] || TYPE_ICONS.Rect;
+  const isGroup = obj.type === 'Group' && obj._objects?.length > 0;
+  const groupId = `group_${idx}`;
+  const expanded = expandedGroups.has(idx);
+
+  let html = `<div class="ly ${sel?'sel':''}" draggable="true" data-idx="${idx}" style="padding-left:${6+depth*18}px"
+    onclick="selectLayer(${idx})" ondragstart="dStart(event,${idx})" ondragover="dOver(event)" ondrop="dDrop(event,${idx})" ondragend="dEnd(event)">
+    <button class="ly-exp ${isGroup ? (expanded?'open':'') : 'hidden'}" onclick="event.stopPropagation();toggleGroup(${idx})">${ARROW_SVG}</button>
+    <div class="ly-ico">${icon}</div>
+    <div class="ly-info"><div class="ly-name">${name}</div><div class="ly-type">${typeName(obj)}${isGroup?' ('+obj._objects.length+')':''}</div></div>
+    <div class="ly-acts">
+      <button class="ly-act ${vis?'':'off'}" onclick="event.stopPropagation();togVis(${idx})">${vis?EYE_SVG:EYE_OFF_SVG}</button>
+    </div>
+  </div>`;
+
+  if (isGroup && expanded && obj._objects) {
+    html += `<div class="ly-children">`;
+    for (let c = obj._objects.length - 1; c >= 0; c--) {
+      const child = obj._objects[c];
+      const childName = child._customName || typeName(child);
+      const childIcon = TYPE_ICONS[child.type] || TYPE_ICONS.Rect;
+      const childIsGroup = child.type === 'Group' && child._objects?.length > 0;
+      html += `<div class="ly" style="padding-left:${6+(depth+1)*18}px;opacity:.7;cursor:default">
+        <button class="ly-exp hidden">${ARROW_SVG}</button>
+        <div class="ly-ico">${childIcon}</div>
+        <div class="ly-info"><div class="ly-name">${childName}</div><div class="ly-type">${typeName(child)}</div></div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+
+function toggleGroup(idx) { expandedGroups.has(idx) ? expandedGroups.delete(idx) : expandedGroups.add(idx); updateLayers(); }
+function selectLayer(i) { const o = canvas.getObjects()[i]; if (o) { canvas.setActiveObject(o); canvas.requestRenderAll(); updateLayers(); updateProps(); updateJsonView(); } }
+function togVis(i) { const o = canvas.getObjects()[i]; if (o) { o.visible = !o.visible; canvas.requestRenderAll(); updateLayers(); saveState(); } }
+
+let dragIdx = null;
+function dStart(e,i) { dragIdx=i; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
+function dOver(e) { e.preventDefault(); e.dataTransfer.dropEffect='move'; }
+function dDrop(e,ti) { e.preventDefault(); if(dragIdx!==null&&dragIdx!==ti){canvas.moveObjectTo(canvas.getObjects()[dragIdx],ti);canvas.requestRenderAll();updateLayers();saveState();}dragIdx=null; }
+function dEnd(e) { e.currentTarget.classList.remove('dragging'); dragIdx=null; }
+
+// ────────────────────── PROPERTY INSPECTOR ──────────────────────
+function updateProps() {
+  const panel = document.getElementById('tabProps');
+  const obj = canvas.getActiveObject();
+
+  if (!obj || obj.type === 'activeSelection') {
+    const count = obj ? obj.getObjects().length : 0;
+    panel.innerHTML = `<div class="props-empty">${count ? count + ' objects selected' : 'Select an object to inspect'}</div>`;
+    document.getElementById('ftrSel').textContent = count ? `${count} selected` : 'No selection';
+    return;
+  }
+
+  document.getElementById('ftrSel').textContent = obj._customName || typeName(obj);
+  let html = '';
+
+  // ── IDENTITY
+  html += propGroup('Identity', false, `
+    <div class="pr"><span class="pr-label">Type</span><div class="pr-val"><span class="pr-tag ${typeTag(obj)}">${obj.type}</span></div></div>
+    <div class="pr"><span class="pr-label">Name</span><div class="pr-val"><input class="pr-input" value="${esc(obj._customName||'')}" onchange="setProp('_customName',this.value)"></div></div>
+    ${obj.type==='Group'&&obj._objects?`<div class="pr"><span class="pr-label">Children</span><div class="pr-val" style="font-size:11px;color:var(--text-2)">${obj._objects.length} objects</div></div>`:''}
+  `);
+
+  // ── TRANSFORM
+  const ox = typeof obj.originX === 'string' ? obj.originX : 'center';
+  const oy = typeof obj.originY === 'string' ? obj.originY : 'center';
+  html += propGroup('Transform', false, `
+    <div class="pr"><span class="pr-label">X</span><div class="pr-half"><input class="pr-input" type="number" value="${r2(obj.left)}" onchange="setNum('left',this.value)"></div>
+    <span class="pr-label">Y</span><div class="pr-half"><input class="pr-input" type="number" value="${r2(obj.top)}" onchange="setNum('top',this.value)"></div></div>
+    <div class="pr"><span class="pr-label">W</span><div class="pr-half"><input class="pr-input" type="number" value="${r2(obj.getScaledWidth())}" onchange="setScaledW(this.value)"></div>
+    <span class="pr-label">H</span><div class="pr-half"><input class="pr-input" type="number" value="${r2(obj.getScaledHeight())}" onchange="setScaledH(this.value)"></div></div>
+    <div class="pr"><span class="pr-label">ScaleX</span><div class="pr-half"><input class="pr-input" type="number" step="0.01" value="${r3(obj.scaleX)}" onchange="setNum('scaleX',this.value)"></div>
+    <span class="pr-label">ScaleY</span><div class="pr-half"><input class="pr-input" type="number" step="0.01" value="${r3(obj.scaleY)}" onchange="setNum('scaleY',this.value)"></div></div>
+    <div class="pr"><span class="pr-label">Angle</span><div class="pr-half"><input class="pr-input" type="number" value="${r2(obj.angle)}" onchange="setNum('angle',this.value)"></div>
+    <span class="pr-label">Opacity</span><div class="pr-half"><input class="pr-input" type="number" step="0.05" min="0" max="1" value="${r3(obj.opacity)}" onchange="setNum('opacity',this.value)"></div></div>
+    <div class="pr"><span class="pr-label">SkewX</span><div class="pr-half"><input class="pr-input" type="number" value="${r2(obj.skewX||0)}" onchange="setNum('skewX',this.value)"></div>
+    <span class="pr-label">SkewY</span><div class="pr-half"><input class="pr-input" type="number" value="${r2(obj.skewY||0)}" onchange="setNum('skewY',this.value)"></div></div>
+    <div class="pr"><span class="pr-label">OriginX</span><div class="pr-half"><select class="pr-select" onchange="setProp('originX',this.value)"><option ${ox==='left'?'selected':''}>left</option><option ${ox==='center'?'selected':''}>center</option><option ${ox==='right'?'selected':''}>right</option></select></div>
+    <span class="pr-label">OriginY</span><div class="pr-half"><select class="pr-select" onchange="setProp('originY',this.value)"><option ${oy==='top'?'selected':''}>top</option><option ${oy==='center'?'selected':''}>center</option><option ${oy==='bottom'?'selected':''}>bottom</option></select></div></div>
+    <div class="pr"><span class="pr-label wide" style="width:auto"><label><input type="checkbox" class="pr-check" ${obj.flipX?'checked':''} onchange="setProp('flipX',this.checked)"> Flip X</label></span>
+    <span class="pr-label wide" style="width:auto"><label><input type="checkbox" class="pr-check" ${obj.flipY?'checked':''} onchange="setProp('flipY',this.checked)"> Flip Y</label></span></div>
+  `);
+
+  // ── FILL
+  html += propGroup('Fill', false, renderFillSection(obj));
+
+  // ── STROKE
+  const sc = obj.stroke || '';
+  const sw = obj.strokeWidth ?? 0;
+  html += propGroup('Stroke', sw === 0, `
+    <div class="pr"><span class="pr-label">Color</span><div class="pr-val">${typeof sc==='string'&&sc?`<input type="color" class="pr-color" value="${toHex(sc)}" onchange="setProp('stroke',this.value)">`:''}
+    <input class="pr-input" value="${esc(typeof sc==='string'?sc:'(complex)')}" onchange="setProp('stroke',this.value)"></div></div>
+    <div class="pr"><span class="pr-label">Width</span><div class="pr-val"><input class="pr-input" type="number" value="${sw}" onchange="setNum('strokeWidth',this.value)"></div></div>
+    <div class="pr"><span class="pr-label">Dash</span><div class="pr-val"><input class="pr-input" value="${obj.strokeDashArray?obj.strokeDashArray.join(', '):''}" onchange="setDash(this.value)" placeholder="e.g. 5, 3"></div></div>
+    <div class="pr"><span class="pr-label">Cap</span><div class="pr-half"><select class="pr-select" onchange="setProp('strokeLineCap',this.value)"><option ${obj.strokeLineCap==='butt'?'selected':''}>butt</option><option ${obj.strokeLineCap==='round'?'selected':''}>round</option><option ${obj.strokeLineCap==='square'?'selected':''}>square</option></select></div>
+    <span class="pr-label">Join</span><div class="pr-half"><select class="pr-select" onchange="setProp('strokeLineJoin',this.value)"><option ${obj.strokeLineJoin==='miter'?'selected':''}>miter</option><option ${obj.strokeLineJoin==='round'?'selected':''}>round</option><option ${obj.strokeLineJoin==='bevel'?'selected':''}>bevel</option></select></div></div>
+  `);
+
+  // ── SHADOW
+  const sh = obj.shadow;
+  html += propGroup('Shadow', !sh, sh ? `
+    <div class="pr"><span class="pr-label">Color</span><div class="pr-val"><input class="pr-input" value="${esc(sh.color||'')}" onchange="setShadowProp('color',this.value)"></div></div>
+    <div class="pr"><span class="pr-label">Blur</span><div class="pr-half"><input class="pr-input" type="number" value="${sh.blur||0}" onchange="setShadowProp('blur',+this.value)"></div>
+    <span class="pr-label">X</span><div class="pr-half"><input class="pr-input" type="number" value="${sh.offsetX||0}" onchange="setShadowProp('offsetX',+this.value)"></div></div>
+    <div class="pr"><span class="pr-label">Y</span><div class="pr-val"><input class="pr-input" type="number" value="${sh.offsetY||0}" onchange="setShadowProp('offsetY',+this.value)"></div></div>
+  ` : `<div class="pr"><span class="pr-label wide" style="color:var(--text-3);font-size:11px">No shadow</span></div>`);
+
+  // ── TEXT (if applicable)
+  if (['Text','IText','Textbox'].includes(obj.type)) {
+    html += propGroup('Text', false, `
+      <div class="pr"><span class="pr-label">Font</span><div class="pr-val"><input class="pr-input" value="${esc(obj.fontFamily||'')}" onchange="setProp('fontFamily',this.value)"></div></div>
+      <div class="pr"><span class="pr-label">Size</span><div class="pr-half"><input class="pr-input" type="number" value="${obj.fontSize||16}" onchange="setNum('fontSize',this.value)"></div>
+      <span class="pr-label">Weight</span><div class="pr-half"><input class="pr-input" value="${obj.fontWeight||'normal'}" onchange="setProp('fontWeight',this.value)"></div></div>
+      <div class="pr"><span class="pr-label">Style</span><div class="pr-half"><select class="pr-select" onchange="setProp('fontStyle',this.value)"><option ${obj.fontStyle!=='italic'?'selected':''}>normal</option><option ${obj.fontStyle==='italic'?'selected':''}>italic</option></select></div>
+      <span class="pr-label">Align</span><div class="pr-half"><select class="pr-select" onchange="setProp('textAlign',this.value)"><option ${obj.textAlign==='left'?'selected':''}>left</option><option ${obj.textAlign==='center'?'selected':''}>center</option><option ${obj.textAlign==='right'?'selected':''}>right</option><option ${obj.textAlign==='justify'?'selected':''}>justify</option></select></div></div>
+      <div class="pr"><span class="pr-label">Line H</span><div class="pr-half"><input class="pr-input" type="number" step="0.05" value="${obj.lineHeight||1.16}" onchange="setNum('lineHeight',this.value)"></div>
+      <span class="pr-label">Char Sp</span><div class="pr-half"><input class="pr-input" type="number" value="${obj.charSpacing||0}" onchange="setNum('charSpacing',this.value)"></div></div>
+      <div class="pr">
+        <span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.underline?'checked':''} onchange="setProp('underline',this.checked)"> Underline</label></span>
+        <span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.linethrough?'checked':''} onchange="setProp('linethrough',this.checked)"> Strikethrough</label></span>
+        <span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.overline?'checked':''} onchange="setProp('overline',this.checked)"> Overline</label></span>
+      </div>
+      ${obj.styles && Object.keys(obj.styles).length ? `<div class="pr"><span class="pr-label wide" style="color:var(--blue);font-size:10px">Has inline character styles (${countStyles(obj.styles)} styled chars)</span></div>` : ''}
+      <div class="pr"><span class="pr-label">Text</span></div>
+      <div class="pr"><div class="pr-val"><textarea class="pr-input" rows="3" style="resize:vertical;font-family:var(--font);font-size:12px" onchange="setProp('text',this.value)">${esc(obj.text||'')}</textarea></div></div>
+    `);
+  }
+
+  // ── GEOMETRY (type-specific)
+  const geomParts = [];
+  if (obj.rx !== undefined) geomParts.push(`<div class="pr"><span class="pr-label">rx</span><div class="pr-half"><input class="pr-input" type="number" value="${r2(obj.rx)}" onchange="setNum('rx',this.value)"></div><span class="pr-label">ry</span><div class="pr-half"><input class="pr-input" type="number" value="${r2(obj.ry||0)}" onchange="setNum('ry',this.value)"></div></div>`);
+  if (obj.radius !== undefined) geomParts.push(`<div class="pr"><span class="pr-label">Radius</span><div class="pr-val"><input class="pr-input" type="number" value="${r2(obj.radius)}" onchange="setNum('radius',this.value)"></div></div>`);
+  if (obj.type === 'Path' && obj.path) geomParts.push(`<div class="pr"><span class="pr-label wide" style="color:var(--text-3);font-size:10px">Path: ${obj.path.length} commands</span></div>`);
+  if (geomParts.length) html += propGroup('Geometry', false, geomParts.join(''));
+
+  // ── FLAGS
+  html += propGroup('Flags', true, `
+    <div class="pr"><span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.selectable!==false?'checked':''} onchange="setProp('selectable',this.checked)"> Selectable</label></span>
+    <span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.evented!==false?'checked':''} onchange="setProp('evented',this.checked)"> Evented</label></span></div>
+    <div class="pr"><span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.visible!==false?'checked':''} onchange="setProp('visible',this.checked)"> Visible</label></span>
+    <span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.hasControls!==false?'checked':''} onchange="setProp('hasControls',this.checked)"> Controls</label></span></div>
+    <div class="pr"><span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.lockMovementX?'checked':''} onchange="setProp('lockMovementX',this.checked)"> Lock Move X</label></span>
+    <span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.lockMovementY?'checked':''} onchange="setProp('lockMovementY',this.checked)"> Lock Move Y</label></span></div>
+    <div class="pr"><span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.lockRotation?'checked':''} onchange="setProp('lockRotation',this.checked)"> Lock Rotation</label></span>
+    <span class="pr-label wide"><label><input type="checkbox" class="pr-check" ${obj.lockScalingX?'checked':''} onchange="setProp('lockScalingX',this.checked)"> Lock Scale X</label></span></div>
+  `);
+
+  panel.innerHTML = html;
+}
+
+function renderFillSection(obj) {
+  const fill = obj.fill;
+  if (!fill || fill === '') return `<div class="pr"><span class="pr-label wide" style="color:var(--text-3);font-size:11px">No fill</span></div>
+    <div class="pr"><span class="pr-label">Color</span><div class="pr-val"><input class="pr-input" value="" onchange="setProp('fill',this.value)" placeholder="Enter color"></div></div>`;
+
+  if (typeof fill === 'string') {
+    return `<div class="pr"><span class="pr-label">Color</span><div class="pr-val">
+      <input type="color" class="pr-color" value="${toHex(fill)}" onchange="setProp('fill',this.value)">
+      <input class="pr-input" value="${esc(fill)}" onchange="setProp('fill',this.value)"></div></div>`;
+  }
+
+  // Gradient
+  if (fill.type === 'linear' || fill.type === 'radial') {
+    const stops = fill.colorStops || [];
+    const gradCSS = stops.map(s => `${s.color} ${Math.round(s.offset*100)}%`).join(', ');
+    const dir = fill.type === 'linear' ? 'to right' : 'circle';
+    let h = `<div class="pr"><span class="pr-label">Type</span><div class="pr-val" style="font-size:11px;color:var(--text-1)">${fill.type} gradient</div></div>`;
+    if (fill.coords) {
+      const c = fill.coords;
+      h += `<div class="pr"><span class="pr-label">Coords</span><div class="pr-val" style="font-size:10px;font-family:var(--mono);color:var(--text-2)">(${r2(c.x1)},${r2(c.y1)}) → (${r2(c.x2)},${r2(c.y2)})${c.r1!==undefined?' r:'+r2(c.r1)+'→'+r2(c.r2):''}</div></div>`;
+    }
+    h += `<div class="pr"><div class="pr-val"><div class="grad-bar" style="background:${fill.type==='linear'?'linear-gradient('+dir+','+gradCSS+')':'radial-gradient('+dir+','+gradCSS+')'}"></div></div></div>`;
+    stops.forEach((s, si) => {
+      h += `<div class="grad-stop"><div class="swatch" style="background:${s.color}"></div> ${Math.round(s.offset*100)}% ${s.color}</div>`;
+    });
+    return h;
+  }
+
+  // Pattern or other
+  return `<div class="pr"><span class="pr-label wide" style="color:var(--text-2);font-size:11px">Complex fill (${typeof fill === 'object' ? fill.type || 'unknown' : typeof fill})</span></div>`;
+}
+
+function propGroup(label, startClosed, content) {
+  return `<div class="pg">
+    <div class="pg-hdr ${startClosed?'closed':''}" onclick="this.classList.toggle('closed')">
+      <svg class="pg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+      ${label}
+    </div>
+    <div class="pg-body">${content}</div>
+  </div>`;
+}
+
+function countStyles(styles) {
+  let n = 0;
+  for (const lk in styles) for (const ck in styles[lk]) n++;
+  return n;
+}
+
+// ── Property setters
+function setProp(key, val) {
+  const obj = canvas.getActiveObject(); if (!obj) return;
+  obj.set(key, val); obj.setCoords(); canvas.requestRenderAll(); updateLayers(); saveState();
+}
+function setNum(key, val) { setProp(key, parseFloat(val)); }
+function setScaledW(val) { const o = canvas.getActiveObject(); if (!o) return; o.set('scaleX', parseFloat(val)/(o.width||1)); o.setCoords(); canvas.requestRenderAll(); saveState(); }
+function setScaledH(val) { const o = canvas.getActiveObject(); if (!o) return; o.set('scaleY', parseFloat(val)/(o.height||1)); o.setCoords(); canvas.requestRenderAll(); saveState(); }
+function setDash(val) { setProp('strokeDashArray', val ? val.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v)) : null); }
+function setShadowProp(key, val) {
+  const obj = canvas.getActiveObject(); if (!obj || !obj.shadow) return;
+  obj.shadow[key] = val; canvas.requestRenderAll(); saveState();
+}
+
+// ── Helpers
+function r2(v) { return Math.round((v||0) * 100) / 100; }
+function r3(v) { return Math.round((v||0) * 1000) / 1000; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toHex(color) {
+  if (!color || typeof color !== 'string') return '#000000';
+  if (color.startsWith('#') && color.length >= 7) return color.slice(0,7);
+  try {
+    const c = document.createElement('canvas').getContext('2d');
+    c.fillStyle = color;
+    return c.fillStyle;
+  } catch { return '#000000'; }
+}
+
+// ────────────────────── JSON INSPECTOR ──────────────────────
+function setJsonMode(mode) {
+  jsonMode = mode;
+  document.getElementById('jsonBtnCanvas').classList.toggle('active', mode === 'canvas');
+  document.getElementById('jsonBtnSel').classList.toggle('active', mode === 'selected');
+  updateJsonView();
+}
+
+function updateJsonView() {
+  const el = document.getElementById('jsonView');
+  let data;
+  if (jsonMode === 'selected') {
+    data = getSelectedJSON();
+    if (!data) { el.innerHTML = '<span style="color:var(--text-3)">No object selected</span>'; return; }
+  } else {
+    data = getCanvasJSON();
+  }
+  el.innerHTML = syntaxHighlight(JSON.stringify(data, null, 2));
+}
+
+function syntaxHighlight(json) {
+  return json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"([^"]+)"(?=\s*:)/g, '<span class="jk">"$1"</span>')
+    .replace(/: "([^"]*)"/g, ': <span class="js">"$1"</span>')
+    .replace(/: (-?\d+\.?\d*([eE][+-]?\d+)?)/g, ': <span class="jn">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="jb">$1</span>')
+    .replace(/: (null)/g, ': <span class="jnull">$1</span>');
+}
+
+function copyJson() {
+  let data;
+  if (jsonMode === 'selected') { data = getSelectedJSON(); if (!data) return; }
+  else data = getCanvasJSON();
+  navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => toast('JSON copied to clipboard', 'ok'));
+}
+
+async function loadFromJsonTab() {
+  try {
+    const txt = await navigator.clipboard.readText();
+    await loadJSON(txt, true);
+    toast('Loaded from clipboard', 'ok');
+  } catch (e) { toast('Failed to read clipboard', 'err'); }
+}
+
+// ────────────────────── TABS ──────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.ptab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('tabLayers').style.display = tab === 'layers' ? '' : 'none';
+  const pp = document.getElementById('tabProps'); pp.style.display = tab === 'props' ? 'flex' : 'none'; pp.className = tab === 'props' ? 'props active' : 'props';
+  const jp = document.getElementById('tabJson'); jp.style.display = tab === 'json' ? 'flex' : 'none'; jp.className = tab === 'json' ? 'json-tab active' : 'json-tab';
+  if (tab === 'json') updateJsonView();
+  if (tab === 'props') updateProps();
+}
+
+// ────────────────────── FOOTER ──────────────────────
+function updateFooter() {
+  document.getElementById('ftrCount').textContent = `${canvas.getObjects().length} objects`;
+}
+
+// ────────────────────── TOAST ──────────────────────
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `toast ${type} show`;
+  clearTimeout(el._t); el._t = setTimeout(() => el.className = 'toast', 2500);
+}
+
+// ────────────────────── EVENTS ──────────────────────
+canvas.on('selection:created', () => { updateLayers(); updateProps(); updateJsonView(); });
+canvas.on('selection:updated', () => { updateLayers(); updateProps(); updateJsonView(); });
+canvas.on('selection:cleared', () => { updateLayers(); updateProps(); updateJsonView(); });
+canvas.on('object:modified', () => { updateProps(); updateJsonView(); saveState(); });
+canvas.on('object:moving', updateProps);
+canvas.on('object:scaling', updateProps);
+canvas.on('object:rotating', updateProps);
+canvas.on('object:added', updateFooter);
+canvas.on('object:removed', updateFooter);
+
+// Mouse coordinates
+document.getElementById('cvsArea').addEventListener('mousemove', (e) => {
+  const rect = document.getElementById('fc').getBoundingClientRect();
+  const x = Math.round((e.clientX - rect.left) / ZOOM);
+  const y = Math.round((e.clientY - rect.top) / ZOOM);
+  document.getElementById('coordsDisplay').textContent = `x: ${x}  y: ${y}`;
+});
+
+// Pan with middle mouse or when pan tool is active
+const cvsArea = document.getElementById('cvsArea');
+cvsArea.addEventListener('mousedown', (e) => {
+  if (e.button === 1 || (currentTool === 'pan' && e.button === 0)) startPan(e);
+});
+cvsArea.addEventListener('mousemove', doPan);
+cvsArea.addEventListener('mouseup', endPan);
+cvsArea.addEventListener('mouseleave', endPan);
+
+// Zoom with Ctrl+scroll
+cvsArea.addEventListener('wheel', (e) => {
+  if (e.ctrlKey || e.metaKey) { e.preventDefault(); applyZoom(ZOOM * (e.deltaY > 0 ? 0.9 : 1.1)); }
+}, { passive: false });
+
+// Keyboard shortcuts
+let spaceDown = false;
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+  if (e.key === ' ' && !spaceDown) { spaceDown = true; setTool('pan', document.querySelector('[data-tool="pan"]')); e.preventDefault(); return; }
+  if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelected(); e.preventDefault(); }
+  if (e.key === 'Escape') { canvas.discardActiveObject(); canvas.requestRenderAll(); updateLayers(); updateProps(); closeImport(); }
+  if (e.key === 'v' || e.key === 'V') setTool('select', document.querySelector('[data-tool="select"]'));
+  if (e.key === 'h' || e.key === 'H') setTool('pan', document.querySelector('[data-tool="pan"]'));
+  if (e.key === 'r' && !e.ctrlKey) addRect();
+  if (e.key === 'c' && !e.ctrlKey && !e.metaKey) addCircle();
+  if (e.key === 't' && !e.ctrlKey) addText();
+
+  if ((e.ctrlKey||e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === 'z' && e.shiftKey) { e.preventDefault(); redo(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === 'Z') { e.preventDefault(); redo(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === 'd') { e.preventDefault(); duplicateSelected(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === 'g' && !e.shiftKey) { e.preventDefault(); groupSelected(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === 'g' && e.shiftKey) { e.preventDefault(); ungroupSelected(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === 'G') { e.preventDefault(); ungroupSelected(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === '=') { e.preventDefault(); zoomIn(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === '-') { e.preventDefault(); zoomOut(); }
+  if ((e.ctrlKey||e.metaKey) && e.key === '0') { e.preventDefault(); zoomToFit(); }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key === ' ' && spaceDown) { spaceDown = false; setTool('select', document.querySelector('[data-tool="select"]')); }
+});
+
+// Modal
+document.getElementById('importModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeImport(); });
+
+// ────────────────────── STARTUP ──────────────────────
+updateLayers(); updateFooter(); updateHistoryBtns();
+zoomToFit();
+
+// Add demo shapes
+addRect(); addCircle(); addText();
+// Initial history state
+history = []; historyIdx = -1; saveState();
+</script>
+</body>
+</html>
